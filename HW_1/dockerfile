@@ -1,0 +1,32 @@
+# Используем базовый образ для Hadoop
+FROM ubuntu:20.04
+
+# Установим необходимые зависимости
+RUN apt-get update && apt-get install -y openjdk-8-jdk wget ssh vim && apt-get clean
+
+# Установим Hadoop 3.3.6
+RUN wget https://dlcdn.apache.org/hadoop/common/hadoop-3.3.6/hadoop-3.3.6.tar.gz && \
+    tar -xzvf hadoop-3.3.6.tar.gz && \
+    mv hadoop-3.3.6 /usr/local/hadoop
+
+# Установка переменных окружения
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+ENV HADOOP_HOME=/usr/local/hadoop
+ENV PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+
+# Скопируем конфигурационные файлы Hadoop
+COPY core-site.xml $HADOOP_HOME/etc/hadoop/
+COPY hdfs-site.xml $HADOOP_HOME/etc/hadoop/
+COPY yarn-site.xml $HADOOP_HOME/etc/hadoop/
+
+# Копируем скрипт с командами do.sh
+COPY do.sh /usr/local/hadoop/do.sh
+
+# Делаем скрипт исполняемым
+RUN chmod +x /usr/local/hadoop/do.sh
+
+# Откроем порты для HDFS и YARN
+EXPOSE 8020 8032
+
+# Запустим Hadoop и YARN
+CMD ["/bin/bash", "-c", "start-dfs.sh && start-yarn.sh && /usr/local/hadoop/do.sh"]
